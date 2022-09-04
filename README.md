@@ -39,10 +39,15 @@ jit_nasm_t jnasm = jit_nasm_create_instance(NULL, 0);   // interface: jit_nasm_c
 To assemble instructions, do the following after initialization
 ```
 jit_nasm_t jnasm = jit_nasm_create_instance(NULL, 0);
-jit_nasm_assemble(jnasm, "mov rax, 0x14fff\n"
+jit_nasm_assemble(jnasm, "mov rdx, 0x14fff\n"
                          "mov rax, 4\n"
+                         "cmp rax, 3\n"
+                         "je label_1\n"
+                         "add rax, 34\n"
+                         "label_1: xor rax, rdx\n"
                          "imul rax, rax\n"
-                         "idiv rdx\n", 0, NULL);   // interface: jit_nasm(jit-nasm struct pointer, code to assemble, argc, argv). argc and argv are used by nasm for more advanced control over the program. Defaults to 0 and NULL.
+                         "idiv rdx\n"
+                         "ret\n", 0, NULL);   // interface: jit_nasm(jit-nasm struct pointer, code to assemble, argc, argv). argc and argv are used by nasm for more advanced control over the program. Defaults to 0 and NULL.
                          
 ```
 
@@ -50,8 +55,12 @@ jit_nasm_assemble(jnasm, "mov rax, 0x14fff\n"
 After assembling your code, you can do the following to execute it.
 ```
 jit_nasm_t jnasm = jit_nasm_create_instance(NULL, 0);
-jit_nasm_assemble(jnasm, "mov rax, 0x14fff\n"
+jit_nasm_assemble(jnasm, "mov rdx, 0x14fff\n"
                          "mov rax, 4\n"
+                         "cmp rax, 3\n"
+                         "je label_1\n"
+                         "add rax, 34\n"
+                         "label_1: xor rax, rdx\n"
                          "imul rax, rax\n"
                          "idiv rdx\n"
                          "ret\n", 0, NULL);  
