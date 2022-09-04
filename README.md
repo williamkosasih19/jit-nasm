@@ -5,9 +5,9 @@ Assemble your assemble listings and call it instantaneously within your program.
 ## Build
 
 To build jit-nasm, simply run the command
-'$ ./autogen.sh'
-'$ ./configure'
-`$ make ` 
+`$ ./autogen.sh`
+`$ ./configure`
+`$ make` 
 inside the code directory.
 
 ## Install Library
@@ -19,7 +19,7 @@ to install libjitnasm in /usr/local/lib
 ## Usage
 
 To link your code with jit-nasm, use -ljitnasm
-'$ gcc your_code.c -ljitnasm'
+`$ gcc your_code.c -ljitnasm`
 
 ### Instantiate Library
 To initialize library, first do the following
