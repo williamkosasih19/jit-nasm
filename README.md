@@ -17,7 +17,9 @@ inside the code directory.
 ## Install Library
 
 To install the jit-nasm library, do the following after building
-'$ sudo make install PREFIX=/usr/local'
+
+`$ sudo make install PREFIX=/usr/local`
+
 to install libjitnasm in /usr/local/lib
 
 ## Usage
