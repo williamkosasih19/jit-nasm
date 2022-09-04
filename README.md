@@ -5,11 +5,13 @@ Assemble your assemble listings and call it instantaneously within your program.
 ## Build
 
 To build jit-nasm, simply run the command
+
 `$ ./autogen.sh`
 
 `$ ./configure`
 
 `$ make` 
+
 inside the code directory.
 
 ## Install Library
