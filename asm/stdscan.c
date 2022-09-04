@@ -81,6 +81,9 @@ void stdscan_cleanup(void)
 {
     stdscan_reset();
     nasm_free(stdscan_tempstorage);
+    stdscan_bufptr = NULL;
+    stdscan_tempstorage = NULL;
+    stdscan_tempsize = 0, stdscan_templen = 0;
 }
 
 static char *stdscan_copy(const char *p, int len)

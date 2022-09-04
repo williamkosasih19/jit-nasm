@@ -521,6 +521,44 @@ static void timestamp(void)
 
 static int _jit_nasm_assemble(const char* code, char* output, int argc, char **argv)
 {    
+ 
+    warn_list = NULL;
+    errhold_stack = NULL;
+    _passn = 0;
+    
+    globalrel = 0;
+    globalbnd = 0;
+    
+    inname = NULL;
+    outname = NULL;
+    
+    listname = NULL;
+    errname = NULL;
+    
+    globallineno = 0;
+    
+    ofmt = &OF_DEFAULT;
+    ofmt_alias = NULL;
+    dfmt = NULL;
+    
+    error_file = NULL;
+    
+    include_path = NULL;
+    
+    ofile = NULL; 
+    cmd_sb = 16; 
+    
+    depend_emit_phony = false;
+    depend_missing_ok = false;
+    depend_target = NULL;
+    depend_file = NULL;
+    depend_list = NULL;
+    
+    user_nolist = false;
+    
+    do_clear(CLEAR_ALL, false);
+ 
+ 
     /* Do these as early as possible */
     error_file = stderr;
     _progname = argv[0];
@@ -792,7 +830,10 @@ int jit_nasm_assemble(jit_nasm_t instance, const char* code, int argc, char **ar
     // }
     
     int retval = _jit_nasm_assemble(processed_code, instance->buffer, num_total_param, new_argv);
-    
+    if (retval) {
+        fprintf(stderr, "Error occured during assembly!\n");
+        exit(-1);
+    }
     
     for (int i = 0; i < num_total_param; i++) {
         free(new_argv[i]);

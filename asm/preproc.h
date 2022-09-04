@@ -53,4 +53,18 @@ enum preproc_token pp_tasm_token_hash(const char *token);
 /* Opens an include file or input file. This uses the include path. */
 FILE *pp_input_fopen(const char *filename, enum file_flags mode);
 
+/*
+ * Free all currently defined macros, and free the hash tables if empty
+ */
+enum clear_what {
+    CLEAR_NONE      = 0,
+    CLEAR_DEFINE    = 1,         /* Clear smacros */
+    CLEAR_DEFALIAS  = 2,         /* Clear smacro aliases */
+    CLEAR_ALLDEFINE = CLEAR_DEFINE|CLEAR_DEFALIAS,
+    CLEAR_MMACRO    = 4,
+    CLEAR_ALL       = CLEAR_ALLDEFINE|CLEAR_MMACRO
+};
+
+void do_clear(enum clear_what what, bool context);
+
 #endif
