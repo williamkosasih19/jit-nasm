@@ -1,4 +1,4 @@
-Just In Time NASM
+#Just In Time NASM
 
 Assemble your assemble listings and call it instantaneously within your program.
 
@@ -6,7 +6,9 @@ Assemble your assemble listings and call it instantaneously within your program.
 
 To build jit-nasm, simply run the command
 `$ ./autogen.sh`
+
 `$ ./configure`
+
 `$ make` 
 inside the code directory.
 
@@ -23,26 +25,26 @@ To link your code with jit-nasm, use -ljitnasm
 
 ### Instantiate Library
 To initialize library, first do the following
-'''
+```
 #include <jit-nasm.h>
 
 jit_nasm_t jnasm = jit_nasm_create_instance(NULL, 0);   // interface: jit_nasm_create_instance(pointer to buffer, buffer size). These two parameters are used for external buffer. Default value is NULL, where jit-nasm will allocate the buffer used to assemble instructions internally.
-'''
+```
 
 ### Assemble Instructions
 To assemble instructions, do the following after initialization
-'''
+```
 jit_nasm_t jnasm = jit_nasm_create_instance(NULL, 0);
 jit_nasm_assemble(jnasm, "mov rax, 0x14fff\n"
                          "mov rax, 4\n"
                          "imul rax, rax\n"
                          "idiv rdx\n", 0, NULL);   // interface: jit_nasm(jit-nasm struct pointer, code to assemble, argc, argv). argc and argv are used by nasm for more advanced control over the program. Defaults to 0 and NULL.
                          
-'''
+```
 
 ### Getting Pointer to Assembled Code
 After assembling your code, you can do the following to execute it.
-'''
+```
 jit_nasm_t jnasm = jit_nasm_create_instance(NULL, 0);
 jit_nasm_assemble(jnasm, "mov rax, 0x14fff\n"
                          "mov rax, 4\n"
@@ -51,11 +53,7 @@ jit_nasm_assemble(jnasm, "mov rax, 0x14fff\n"
                          "ret\n", 0, NULL);  
 void (*func)() = jit_nasm_get_code(jnasm);   // Cast value to a void function pointer
 func();   // Call the code.
-'''
-
-
-
-inside the code directory.
+```
 
 
 Original NASM Readme Below
