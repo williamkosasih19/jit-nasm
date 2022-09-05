@@ -38,6 +38,10 @@
 #ifndef JIT_NASM_NASM_H
 #define JIT_NASM_NASM_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // default length of internal buffer
 #define MEM_BUFFER 6000
 // actual writable buffer size = MEM_BUFFER - BUFFER_TOLERANCE
@@ -58,5 +62,9 @@ int jit_nasm_destroy_instance(jit_nasm_t instance);
 
 
 void *jit_nasm_get_code(jit_nasm_t al);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif  /* NASM_NASM_H */
