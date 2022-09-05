@@ -519,9 +519,7 @@ static void timestamp(void)
     }
 }
 
-static int _jit_nasm_assemble(const char* code, char* output, int argc, char **argv)
-{    
- 
+static void primary_clear(void) {
     warn_list = NULL;
     errhold_stack = NULL;
     _passn = 0;
@@ -555,10 +553,10 @@ static int _jit_nasm_assemble(const char* code, char* output, int argc, char **a
     depend_list = NULL;
     
     user_nolist = false;
-    
-    do_clear(CLEAR_ALL, false);
- 
- 
+}
+
+static int _jit_nasm_assemble(const char* code, char* output, int argc, char **argv)
+{        
     /* Do these as early as possible */
     error_file = stderr;
     _progname = argv[0];
@@ -788,6 +786,8 @@ static int _jit_nasm_assemble(const char* code, char* output, int argc, char **a
     stdscan_cleanup();
     src_free();
     strlist_free(&include_path);
+    
+    primary_clear();
 
     return terminate_after_phase;
 }

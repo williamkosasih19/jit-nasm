@@ -991,6 +991,18 @@ static void free_smacro(SMacro *s)
     nasm_free(s);
 }
 
+/*
+ * Free all currently defined macros, and free the hash tables if empty
+ */
+enum clear_what {
+    CLEAR_NONE      = 0,
+    CLEAR_DEFINE    = 1,         /* Clear smacros */
+    CLEAR_DEFALIAS  = 2,         /* Clear smacro aliases */
+    CLEAR_ALLDEFINE = CLEAR_DEFINE|CLEAR_DEFALIAS,
+    CLEAR_MMACRO    = 4,
+    CLEAR_ALL       = CLEAR_ALLDEFINE|CLEAR_MMACRO
+};
+
 static void clear_smacro_table(struct hash_table *smt, enum clear_what what)
 {
     struct hash_iterator it;
@@ -3399,7 +3411,7 @@ static void mark_smac_params(Token *tline, const SMacro *tmpl,
 /**
  * %clear selected macro sets either globally or in contexts
  */
-void do_clear(enum clear_what what, bool context)
+static void do_clear(enum clear_what what, bool context)
 {
     if (context) {
         if (what & CLEAR_ALLDEFINE) {
@@ -7382,6 +7394,8 @@ void pp_cleanup_session(void)
     predef = NULL;
     delete_Blocks();
     ipath_list = NULL;
+    
+    do_clear(CLEAR_ALL, false);
 }
 
 void pp_include_path(struct strlist *list)
