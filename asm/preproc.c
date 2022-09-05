@@ -6985,7 +6985,7 @@ static void pp_reset_stdmac(enum preproc_mode mode)
     define_smacro("__?PASS?__", true, make_tok_num(NULL, apass), NULL);
 }
 
-void pp_reset(const char *file, enum preproc_mode mode,
+void pp_reset(const char *file, FILE* in_fp, enum preproc_mode mode,
               struct strlist *dep_list)
 {
     cstk = NULL;
@@ -7020,7 +7020,12 @@ void pp_reset(const char *file, enum preproc_mode mode,
 
     /* First set up the top level input file */
     nasm_new(istk);
-    istk->fp = nasm_open_read(file, NF_TEXT);
+    
+    
+    // istk->fp = nasm_open_read(file, NF_TEXT);
+    istk->fp = in_fp;
+    
+    
     if (!istk->fp) {
 	nasm_fatalf(ERR_NOFILE, "unable to open input file `%s'%s%s",
                     file, errno ? " " : "", errno ? strerror(errno) : "");
@@ -7218,7 +7223,7 @@ static Token *pp_tokline(void)
                 Include *i = istk;
 
                 if (i->fp)
-                    fclose(i->fp);
+                    fseek(i->fp, 0, SEEK_SET);
                 if (i->conds) {
                     /* nasm_fatal can't be conditionally suppressed */
                     nasm_fatal("expected `%%endif' before end of file");

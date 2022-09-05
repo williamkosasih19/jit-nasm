@@ -434,8 +434,8 @@ void pp_init(enum preproc_opt opt);
  * of the pass, an error reporting function, an evaluator
  * function, and a listing generator to talk to.
  */
-void pp_reset(const char *file, enum preproc_mode mode,
-              struct strlist *deplist);
+void pp_reset(const char *file, FILE* in_fp, enum preproc_mode mode,
+              struct strlist *dep_list);
 
 /*
  * Called to fetch a line of preprocessed source. The line

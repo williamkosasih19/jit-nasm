@@ -623,7 +623,7 @@ int main(int argc, char **argv)
             if (depend_missing_ok)
                 pp_include_path(NULL);    /* "assume generated" */
 
-            pp_reset(inname, PP_DEPS, depend_list);
+            pp_reset(inname, NULL, PP_DEPS, depend_list);
             ofile = NULL;
             while ((line = pp_getline()))
                 nasm_free(line);
@@ -650,7 +650,7 @@ int main(int argc, char **argv)
             location.known = false;
 
             _pass_type = PASS_PREPROC;
-            pp_reset(inname, PP_PREPROC, depend_list);
+            pp_reset(inname, NULL, PP_PREPROC, depend_list);
 
             while ((line = pp_getline())) {
                 /*
@@ -1715,7 +1715,7 @@ static void assemble_file(const char *fname, struct strlist *depend_list)
             location.known = true;
         ofmt->reset();
         switch_segment(ofmt->section(NULL, &globalbits));
-        pp_reset(fname, PP_NORMAL, pass_final() ? depend_list : NULL);
+        pp_reset(fname, NULL, PP_NORMAL, pass_final() ? depend_list : NULL);
 
         globallineno = 0;
 

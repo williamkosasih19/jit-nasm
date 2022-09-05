@@ -77,7 +77,7 @@ struct forwrefinfo {            /* info held on forward refs. */
 const char *_progname;
 
 static void parse_cmdline(int, char **, int);
-static void assemble_file(const char *, struct strlist *);
+static void assemble_file(const char *, FILE*, struct strlist *);
 static bool skip_this_pass(errflags severity);
 static void usage(void);
 static void help(FILE *);
@@ -555,7 +555,7 @@ static void primary_clear(void) {
     user_nolist = false;
 }
 
-static int _jit_nasm_assemble(const char* code, char* output, int argc, char **argv)
+static int _jit_nasm_assemble(FILE* in_fp, FILE* out_fp, int argc, char **argv)
 {        
     /* Do these as early as possible */
     error_file = stderr;
@@ -663,7 +663,7 @@ static int _jit_nasm_assemble(const char* code, char* output, int argc, char **a
             if (depend_missing_ok)
                 pp_include_path(NULL);    /* "assume generated" */
 
-            pp_reset(inname, PP_DEPS, depend_list);
+            pp_reset(inname, in_fp, PP_DEPS, depend_list);
             ofile = NULL;
             while ((line = pp_getline()))
                 nasm_free(line);
@@ -677,20 +677,22 @@ static int _jit_nasm_assemble(const char* code, char* output, int argc, char **a
             int32_t lineinc = 0;
             FILE *out;
 
-            if (outname) {
-                ofile = nasm_open_write(outname, NF_TEXT);
-                if (!ofile)
-                    nasm_fatal("unable to open output file `%s'", outname);
-                out = ofile;
-            } else {
-                ofile = NULL;
-                out = stdout;
-            }
+            // if (outname) {
+            //     ofile = nasm_open_write(outname, NF_TEXT);
+            //     if (!ofile)
+            //         nasm_fatal("unable to open output file `%s'", outname);
+            //     out = ofile;
+            // } else {
+            //     ofile = NULL;
+            //     out = stdout;
+            // }
+            
+            ofile = out_fp;
 
             location.known = false;
 
             _pass_type = PASS_PREPROC;
-            pp_reset(inname, PP_PREPROC, depend_list);
+            pp_reset(inname, in_fp, PP_PREPROC, depend_list);
 
             while ((line = pp_getline())) {
                 /*
@@ -739,22 +741,24 @@ static int _jit_nasm_assemble(const char* code, char* output, int argc, char **a
 
             pp_cleanup_pass();
             reset_warnings();
-            if (ofile)
-                fclose(ofile);
+            // if (ofile)
+            //     fclose(ofile);
             if (ofile && terminate_after_phase && !keep_all)
                 remove(outname);
             ofile = NULL;
     }
 
     if (operating_mode & OP_NORMAL) {
-        ofile = nasm_open_write(outname, (ofmt->flags & OFMT_TEXT) ? NF_TEXT : NF_BINARY);
-        if (!ofile)
-            nasm_fatal("unable to open output file `%s'", outname);
+        // ofile = nasm_open_write(outname, (ofmt->flags & OFMT_TEXT) ? NF_TEXT : NF_BINARY);
+        // if (!ofile)
+        //     nasm_fatal("unable to open output file `%s'", outname);
+        
+        ofile = out_fp;
 
         ofmt->init();
         dfmt->init();
 
-        assemble_file(inname, depend_list);
+        assemble_file(inname, in_fp, depend_list);
 
         if (!terminate_after_phase) {
             ofmt->cleanup();
@@ -765,7 +769,7 @@ static int _jit_nasm_assemble(const char* code, char* output, int argc, char **a
         }
 
         if (ofile) {
-            fclose(ofile);
+            // fclose(ofile);
             if (terminate_after_phase && !keep_all)
                 remove(outname);
             ofile = NULL;
@@ -799,15 +803,13 @@ int jit_nasm_assemble(jit_nasm_t instance, const char* code, int argc, char **ar
     const size_t processed_code_len = code_len + strlen(preamble) + 1;
     
     char* processed_code = malloc(processed_code_len);
-    strncpy(processed_code, preamble, sizeof(preamble));
-    strncat(processed_code, code, code_len);
+    strncpy(processed_code, preamble, strlen(preamble) + 1);
+    strncat(processed_code, code, code_len + 1);
     
-    FILE* temp_input_f = fopen("/tmp/temp.jit-nasm", "w");
-    fwrite(processed_code, 1, strlen(processed_code), temp_input_f);
-    fflush(temp_input_f);
-    fclose(temp_input_f);
-    
-    char* aug_param[] = {"jit-nasm", "/tmp/temp.jit-nasm", "-f", "bin", "-o/tmp/temp.jit-nasm.out"};
+    FILE* temp_input_f = fmemopen(processed_code, processed_code_len, "r");
+    FILE* temp_output_f = fmemopen(instance->buffer, instance->buffer_len, "w");
+        
+    char* aug_param[] = {"jit-nasm", "dummy_in", "-fbin", "-odummy_out"};
     
     const size_t num_aug_param = sizeof(aug_param) / sizeof(char*);
     const size_t num_total_param = argc + num_aug_param;
@@ -825,11 +827,7 @@ int jit_nasm_assemble(jit_nasm_t instance, const char* code, int argc, char **ar
         strncpy(new_argv[i], aug_param[i - argc], cur_aug_param_len + 1);
     }
     
-    // for (int i = 0; i < num_total_param; i++) {
-    //     printf("new_argv[%d] = %s\n", i, new_argv[i]);
-    // }
-    
-    int retval = _jit_nasm_assemble(processed_code, instance->buffer, num_total_param, new_argv);
+    int retval = _jit_nasm_assemble(temp_input_f, temp_output_f, num_total_param, new_argv);
     if (retval) {
         fprintf(stderr, "Error occured during assembly!\n");
         exit(-1);
@@ -841,17 +839,9 @@ int jit_nasm_assemble(jit_nasm_t instance, const char* code, int argc, char **ar
     
     free(new_argv);
     free(processed_code);
+    fclose(temp_input_f);
+    fclose(temp_output_f);
     
-    if (instance->buffer) {
-        char* output = instance->buffer;
-        FILE* temp_output_f = fopen("/tmp/temp.jit-nasm.out", "rb");
-        
-        
-        while(fread(output++, 1, 1, temp_output_f));
-            
-            
-        fclose(temp_output_f); 
-    }
     return retval;
 }
 
@@ -1632,13 +1622,13 @@ static void parse_cmdline(int argc, char **argv, int pass)
     if (pass != 2)
         return;
 
-    if (!inname)
-        nasm_fatalf(ERR_USAGE, "no input file specified");
-    else if ((errname && !strcmp(inname, errname)) ||
-             (outname && !strcmp(inname, outname)) ||
-             (listname &&  !strcmp(inname, listname))  ||
-             (depend_file && !strcmp(inname, depend_file)))
-        nasm_fatalf(ERR_USAGE, "will not overwrite input file");
+    // if (!inname)
+    //     nasm_fatalf(ERR_USAGE, "no input file specified");
+    // else if ((errname && !strcmp(inname, errname)) ||
+    //          (outname && !strcmp(inname, outname)) ||
+    //          (listname &&  !strcmp(inname, listname))  ||
+    //          (depend_file && !strcmp(inname, depend_file)))
+    //     nasm_fatalf(ERR_USAGE, "will not overwrite input file");
 
     if (errname) {
         error_file = nasm_open_write(errname, NF_TEXT);
@@ -1732,7 +1722,7 @@ static void process_insn(insn *instruction)
     }
 }
 
-static void assemble_file(const char *fname, struct strlist *depend_list)
+static void assemble_file(const char *fname, FILE* in_fp, struct strlist *depend_list)
 {
     char *line;
     insn output_ins;
@@ -1820,7 +1810,7 @@ static void assemble_file(const char *fname, struct strlist *depend_list)
             location.known = true;
         ofmt->reset();
         switch_segment(ofmt->section(NULL, &globalbits));
-        pp_reset(fname, PP_NORMAL, pass_final() ? depend_list : NULL);
+        pp_reset(fname, in_fp, PP_NORMAL, pass_final() ? depend_list : NULL);
 
         globallineno = 0;
 
@@ -2030,7 +2020,7 @@ static fatal_func die_hard(errflags true_type, errflags severity)
         abort();
 
     if (ofile) {
-        fclose(ofile);
+        // fclose(ofile);
         if (!keep_all)
             remove(outname);
         ofile = NULL;
