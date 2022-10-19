@@ -171,6 +171,8 @@ static char *quote_for_pmake(const char *str);
 static char *quote_for_wmake(const char *str);
 static char *(*quote_for_make)(const char *) = quote_for_pmake;
 
+static FILE* g_error_fp = NULL;
+
 /*
  * Execution limits that can be set via a command-line option or %pragma
  */
@@ -556,8 +558,9 @@ static void primary_clear(void) {
 }
 
 static int _jit_nasm_assemble(FILE* in_fp, FILE* out_fp, int argc, char **argv)
-{        
+{  
     /* Do these as early as possible */
+    g_error_fp = in_fp;
     error_file = stderr;
     _progname = argv[0];
     if (!_progname || !_progname[0])
@@ -2251,12 +2254,24 @@ static void nasm_issue_error(struct nasm_errtext *et)
             here = where.filename ? " here" : " in an unknown location";
         }
 
+        char* error_line_buf = NULL;
+        int size;
+        fseek(g_error_fp, 0, SEEK_SET);
+        
+        for (int i = 0; i < where.lineno + PREAMBLE_LEN - 1; i++) {
+            error_line_buf = NULL;
+            getline(&error_line_buf, &size, g_error_fp);
+            free(error_line_buf);
+        }
+        error_line_buf = NULL;
+        getline(&error_line_buf, &size, g_error_fp);
+
         if (warn_list && true_type < ERR_NONFATAL) {
             /*
              * Buffer up warnings until we either get an error
              * or we are on the code-generation pass.
              */
-            strlist_printf(warn_list, "At line %s%s%s%s%s",
+            strlist_printf(warn_list, "%sAt line %s%s%s%s%s\n\n", error_line_buf,
                            linestr, errfmt->beforemsg,
                            pfx, et->msg, here, warnsuf);
         } else {
@@ -2269,10 +2284,11 @@ static void nasm_issue_error(struct nasm_errtext *et)
                 strlist_free(&warn_list);
             }
 
-            fprintf(error_file, "At line %s%s%s%s%s\n",
+            fprintf(error_file, "%sAt line %s%s%s%s%s\n\n", error_line_buf,
                     linestr, errfmt->beforemsg,
                     pfx, et->msg, here, warnsuf);
         }
+    free(error_line_buf);
     }
 
     /* Are we recursing from error_list_macros? */
