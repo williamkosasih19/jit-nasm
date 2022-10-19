@@ -797,6 +797,7 @@ static int _jit_nasm_assemble(FILE* in_fp, FILE* out_fp, int argc, char **argv)
 }
 
 int jit_nasm_assemble(jit_nasm_t instance, const char* code, int argc, char **argv) {
+#define PREAMBLE_LEN 2
     const char* preamble = "BITS 64\ndefault rel\n";
     
     const size_t code_len = strlen(code);
@@ -808,8 +809,8 @@ int jit_nasm_assemble(jit_nasm_t instance, const char* code, int argc, char **ar
     
     FILE* temp_input_f = fmemopen(processed_code, processed_code_len, "r");
     FILE* temp_output_f = fmemopen(instance->buffer, instance->buffer_len, "w");
-        
-    char* aug_param[] = {"jit-nasm", "dummy_in", "-fbin", "-odummy_out"};
+
+    char* aug_param[] = {"jit-nasm", "input", "-fbin", "-ooutput"};
     
     const size_t num_aug_param = sizeof(aug_param) / sizeof(char*);
     const size_t num_total_param = argc + num_aug_param;
@@ -2056,6 +2057,8 @@ static struct src_location error_where(errflags severity)
         }
     }
 
+    where.lineno -= PREAMBLE_LEN;
+
     return where;
 }
 
@@ -2253,8 +2256,8 @@ static void nasm_issue_error(struct nasm_errtext *et)
              * Buffer up warnings until we either get an error
              * or we are on the code-generation pass.
              */
-            strlist_printf(warn_list, "%s%s%s%s%s%s%s",
-                           file, linestr, errfmt->beforemsg,
+            strlist_printf(warn_list, "At line %s%s%s%s%s",
+                           linestr, errfmt->beforemsg,
                            pfx, et->msg, here, warnsuf);
         } else {
             /*
@@ -2266,8 +2269,8 @@ static void nasm_issue_error(struct nasm_errtext *et)
                 strlist_free(&warn_list);
             }
 
-            fprintf(error_file, "%s%s%s%s%s%s%s\n",
-                    file, linestr, errfmt->beforemsg,
+            fprintf(error_file, "At line %s%s%s%s%s\n",
+                    linestr, errfmt->beforemsg,
                     pfx, et->msg, here, warnsuf);
         }
     }
